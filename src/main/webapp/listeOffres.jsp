@@ -1,28 +1,37 @@
 
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
+
 <%@ page import="java.util.List" %>
 <%@ page import="model.Offre" %>
 
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <title>Liste des offres</title>
 </head>
+
 <body>
 
     <h1>Liste des offres d'emploi</h1>
-    
-    
-<form action="${pageContext.request.contextPath}/rechercherOffre" method="get">
-    <label>Rechercher une offre :</label>
-    <input type="text" name="motCle" placeholder="Titre ou entreprise">
-    <input type="submit" value="Rechercher">
-</form>
 
-<br>
-    
+    <!-- Formulaire de recherche -->
+    <form action="${pageContext.request.contextPath}/rechercherOffre"
+          method="get">
+
+        <label>Rechercher une offre :</label>
+
+        <input type="text"
+               name="motCle"
+               placeholder="Titre ou entreprise">
+
+        <input type="submit" value="Rechercher">
+
+    </form>
+
+    <br>
 
     <%
         List<Offre> offres =
@@ -36,6 +45,7 @@
     <% } else { %>
 
         <table border="1">
+
             <tr>
                 <th>ID</th>
                 <th>Titre</th>
@@ -45,19 +55,47 @@
                 <th>Type de contrat</th>
                 <th>Salaire</th>
                 <th>Date de publication</th>
+                <th>Action</th>
             </tr>
 
             <% for (Offre offre : offres) { %>
 
                 <tr>
+
                     <td><%= offre.getIdOffre() %></td>
+
                     <td><%= offre.getTitre() %></td>
+
                     <td><%= offre.getDescription() %></td>
+
                     <td><%= offre.getEntreprise() %></td>
+
                     <td><%= offre.getLieu() %></td>
+
                     <td><%= offre.getTypeContrat() %></td>
+
                     <td><%= offre.getSalaire() %> DH</td>
+
                     <td><%= offre.getDatePublication() %></td>
+
+                    <td>
+
+                        <!-- Formulaire pour postuler -->
+                        <form action="${pageContext.request.contextPath}/postuler"
+                              method="post">
+
+                            <input type="hidden"
+                                   name="idOffre"
+                                   value="<%= offre.getIdOffre() %>">
+
+                            <button type="submit">
+                                Postuler
+                            </button>
+
+                        </form>
+
+                    </td>
+
                 </tr>
 
             <% } %>
@@ -67,7 +105,10 @@
     <% } %>
 
     <br>
-    <a href="accueilCandidat.jsp">Retour à l'accueil</a>
+
+    <a href="accueilCandidat.jsp">
+        Retour à l'accueil
+    </a>
 
 </body>
 </html>

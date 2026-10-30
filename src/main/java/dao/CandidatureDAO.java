@@ -111,4 +111,93 @@ public class CandidatureDAO {
 
         return false;
     }
+    public boolean postuler(int idCandidat, int idOffre) {
+
+        String sql = "INSERT INTO candidature (id_candidat, id_offre, statut) "
+                   + "VALUES (?, ?, 'En attente')";
+
+        try {
+            Connection con = Connexion.getConnection();
+
+            // Vérifier si le candidat a déjà postulé à cette offre
+            String verification = "SELECT * FROM candidature "
+                                + "WHERE id_candidat = ? AND id_offre = ?";
+
+            PreparedStatement psVerif = con.prepareStatement(verification);
+            psVerif.setInt(1, idCandidat);
+            psVerif.setInt(2, idOffre);
+
+            ResultSet rs = psVerif.executeQuery();
+
+            if (rs.next()) {
+                rs.close();
+                psVerif.close();
+                con.close();
+                return false;
+            }
+
+            rs.close();
+            psVerif.close();
+
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setInt(1, idCandidat);
+            ps.setInt(2, idOffre);
+
+            int resultat = ps.executeUpdate();
+
+            ps.close();
+            con.close();
+
+            return resultat > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+    public List<Candidature> afficherParCandidat(int idCandidat) {
+
+        List<Candidature> candidatures = new ArrayList<>();
+
+        String sql = "SELECT c.id_candidature, c.date_candidature, c.statut, "
+                   + "o.titre, o.entreprise "
+                   + "FROM candidature c "
+                   + "JOIN offre o ON c.id_offre = o.id_offre "
+                   + "WHERE c.id_candidat = ? "
+                   + "ORDER BY c.date_candidature DESC";
+
+        try {
+            Connection con = Connexion.getConnection();
+
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setInt(1, idCandidat);
+
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+
+                Candidature candidature = new Candidature();
+
+                candidature.setIdCandidature(rs.getInt("id_candidature"));
+                candidature.setTitreOffre(rs.getString("titre"));
+                candidature.setEntreprise(rs.getString("entreprise"));
+                candidature.setDateCandidature(
+                    rs.getTimestamp("date_candidature")
+                );
+                candidature.setStatut(rs.getString("statut"));
+
+                candidatures.add(candidature);
+            }
+
+            rs.close();
+            ps.close();
+            con.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return candidatures;
+    }
 }

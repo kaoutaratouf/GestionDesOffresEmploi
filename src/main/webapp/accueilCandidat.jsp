@@ -22,6 +22,11 @@
 
     <h2>Bienvenue <%= candidat.getPrenom() %> !</h2>
     <p>Vous êtes connecté en tant que candidat.</p>
+    <h2>Espace candidat</h2>
+
+<p><a href="offres">Consulter les offres d'emploi</a></p>
+
+<p><a href="mesCandidatures">Consulter mes candidatures</a></p>
 
 </body>
 </html>
