@@ -2,23 +2,53 @@ package model;
 
 import java.sql.Timestamp;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "candidature")
 public class Candidature {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_candidature")
     private int idCandidature;
+
+    @Column(name = "id_candidat")
     private int idCandidat;
+
+    @Column(name = "id_offre")
     private int idOffre;
 
-    private String nomCandidat;
-    private String prenomCandidat;
-    private String emailCandidat;
-
-    private String titreOffre;
-    private String entreprise;
-
+    // Valeur par défaut gérée par MySQL
+    @Column(name = "date_candidature", insertable = false, updatable = false)
     private Timestamp dateCandidature;
+
+    @Column(name = "statut")
     private String statut;
 
+    // Champs issus des jointures (pas des colonnes de la table)
+    @Transient
+    private String nomCandidat;
+
+    @Transient
+    private String prenomCandidat;
+
+    @Transient
+    private String emailCandidat;
+
+    @Transient
+    private String titreOffre;
+
+    @Transient
+    private String entreprise;
+
     public Candidature() {
+    }
+
+    public Candidature(int idCandidat, int idOffre, String statut) {
+        this.idCandidat = idCandidat;
+        this.idOffre = idOffre;
+        this.statut = statut;
     }
 
     public int getIdCandidature() {
@@ -43,6 +73,22 @@ public class Candidature {
 
     public void setIdOffre(int idOffre) {
         this.idOffre = idOffre;
+    }
+
+    public Timestamp getDateCandidature() {
+        return dateCandidature;
+    }
+
+    public void setDateCandidature(Timestamp dateCandidature) {
+        this.dateCandidature = dateCandidature;
+    }
+
+    public String getStatut() {
+        return statut;
+    }
+
+    public void setStatut(String statut) {
+        this.statut = statut;
     }
 
     public String getNomCandidat() {
@@ -83,21 +129,5 @@ public class Candidature {
 
     public void setEntreprise(String entreprise) {
         this.entreprise = entreprise;
-    }
-
-    public Timestamp getDateCandidature() {
-        return dateCandidature;
-    }
-
-    public void setDateCandidature(Timestamp dateCandidature) {
-        this.dateCandidature = dateCandidature;
-    }
-
-    public String getStatut() {
-        return statut;
-    }
-
-    public void setStatut(String statut) {
-        this.statut = statut;
     }
 }

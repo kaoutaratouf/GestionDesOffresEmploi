@@ -1,39 +1,25 @@
-
 package dao;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import org.hibernate.Session;
+import org.hibernate.query.Query;
 
 import model.Administrateur;
-import util.Connexion;
+import util.HibernateUtil;
 
 public class AdministrateurDAO {
 
-    public Administrateur authentifier(String email, String motDePasse)
-            throws SQLException {
+    public Administrateur authentifier(String email, String motDePasse) {
 
-        String sql = "SELECT * FROM Administrateur "
-                   + "WHERE email = ? AND mot_de_passe = ?";
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
 
-        try (Connection con = Connexion.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+            Query<Administrateur> query = session.createQuery(
+                "FROM Administrateur WHERE email = :email AND motDePasse = :mdp",
+                Administrateur.class);
 
-            ps.setString(1, email);
-            ps.setString(2, motDePasse);
+            query.setParameter("email", email);
+            query.setParameter("mdp", motDePasse);
 
-            try (ResultSet rs = ps.executeQuery()) {
-
-                if (rs.next()) {
-                    return new Administrateur(
-                        rs.getString("email"),
-                        motDePasse
-                    );
-                }
-            }
+            return query.uniqueResult();
         }
-
-        return null;
     }
 }

@@ -1,104 +1,47 @@
-
 package dao;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.Session;
+
 import model.Offre;
-import util.Connexion;
+import util.HibernateUtil;
 
 public class OffreDAO {
 
     public List<Offre> afficherToutes() {
 
-        List<Offre> offres = new ArrayList<>();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
 
-        String sql = "SELECT * FROM offre";
-
-        try {
-            Connection con = Connexion.getConnection();
-
-            System.out.println("Connexion à MySQL réussie");
-
-            PreparedStatement ps = con.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery();
-
-            while (rs.next()) {
-                Offre offre = new Offre();
-
-                offre.setIdOffre(rs.getInt("id_offre"));
-                offre.setTitre(rs.getString("titre"));
-                offre.setDescription(rs.getString("description"));
-                offre.setEntreprise(rs.getString("entreprise"));
-                offre.setLieu(rs.getString("lieu"));
-                offre.setTypeContrat(rs.getString("type_contrat"));
-                offre.setDatePublication(rs.getDate("date_publication"));
-                offre.setDateLimite(rs.getDate("date_limite"));
-                offre.setSalaire(rs.getDouble("salaire"));
-                offre.setStatut(rs.getString("statut"));
-
-                offres.add(offre);
-            }
+            List<Offre> offres = session.createQuery("FROM Offre", Offre.class)
+                                        .getResultList();
 
             System.out.println("Nombre d'offres trouvées : " + offres.size());
-
-            rs.close();
-            ps.close();
-            con.close();
+            return offres;
 
         } catch (Exception e) {
             System.out.println("Erreur lors de la récupération des offres :");
             e.printStackTrace();
+            return new ArrayList<>();
         }
-
-        return offres;
     }
 
-public List<Offre> rechercher(String motCle) {
+    public List<Offre> rechercher(String motCle) {
 
-    List<Offre> offres = new ArrayList<>();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
 
-    String sql = "SELECT * FROM offre "
-               + "WHERE titre LIKE ? OR entreprise LIKE ?";
+            String motif = "%" + motCle + "%";
 
-    try {
-        Connection con = Connexion.getConnection();
-        PreparedStatement ps = con.prepareStatement(sql);
+            return session.createQuery(
+                    "FROM Offre WHERE titre LIKE :motif OR entreprise LIKE :motif",
+                    Offre.class)
+                .setParameter("motif", motif)
+                .getResultList();
 
-        ps.setString(1, "%" + motCle + "%");
-        ps.setString(2, "%" + motCle + "%");
-
-        ResultSet rs = ps.executeQuery();
-
-        while (rs.next()) {
-            Offre offre = new Offre();
-
-            offre.setIdOffre(rs.getInt("id_offre"));
-            offre.setTitre(rs.getString("titre"));
-            offre.setDescription(rs.getString("description"));
-            offre.setEntreprise(rs.getString("entreprise"));
-            offre.setLieu(rs.getString("lieu"));
-            offre.setTypeContrat(rs.getString("type_contrat"));
-            offre.setDatePublication(rs.getDate("date_publication"));
-            offre.setDateLimite(rs.getDate("date_limite"));
-            offre.setSalaire(rs.getDouble("salaire"));
-            offre.setStatut(rs.getString("statut"));
-
-            offres.add(offre);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
         }
-
-        rs.close();
-        ps.close();
-        con.close();
-
-    } catch (Exception e) {
-        e.printStackTrace();
     }
-
-    return offres;
-}
-
 }
