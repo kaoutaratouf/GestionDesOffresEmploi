@@ -1,14 +1,27 @@
 
 package model;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "entreprise")
 public class Entreprise {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private int id;
-    private String nom;
-    private String email;
-    private String mot_de_passe;
 
-    // Constructeur vide
+    @Column(name = "nom", nullable = false)
+    private String nom;
+
+    @Column(name = "email", nullable = false)
+    private String email;
+
+    @Column(name = "mot_de_passe", nullable = false)
+    private String motDePasse;
+
+    // Constructeur vide obligatoire pour Hibernate
     public Entreprise() {
     }
 
@@ -17,17 +30,18 @@ public class Entreprise {
         this.id = id;
         this.nom = nom;
         this.email = email;
-        this.mot_de_passe = mot_de_passe;
+        this.motDePasse = mot_de_passe;
     }
 
     // Constructeur sans ID
     public Entreprise(String nom, String email, String mot_de_passe) {
         this.nom = nom;
         this.email = email;
-        this.mot_de_passe = mot_de_passe;
+        this.motDePasse = mot_de_passe;
     }
 
     // Getters et Setters
+
     public int getId() {
         return id;
     }
@@ -52,20 +66,21 @@ public class Entreprise {
         this.email = email;
     }
 
-    public String getMot_de_passe() {
-        return mot_de_passe;
-    }
-
-    public void setMot_de_passe(String mot_de_passe) {
-        this.mot_de_passe = mot_de_passe;
-    }
-
-    // Compatibility with EntrepriseDAO and ModifierEntrepriseServlet
     public String getMotDePasse() {
-        return mot_de_passe;
+        return motDePasse;
     }
 
     public void setMotDePasse(String motDePasse) {
-        this.mot_de_passe = motDePasse;
+        this.motDePasse = motDePasse;
+    }
+
+    // Compatibility with existing code
+
+    public String getMot_de_passe() {
+        return motDePasse;
+    }
+
+    public void setMot_de_passe(String mot_de_passe) {
+        this.motDePasse = mot_de_passe;
     }
 }

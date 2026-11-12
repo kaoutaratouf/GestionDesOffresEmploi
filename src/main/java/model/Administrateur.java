@@ -1,9 +1,16 @@
-
 package model;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "administrateur")
 public class Administrateur {
 
+    @Id
+    @Column(name = "email", length = 150)
     private String email;
+
+    @Column(name = "mot_de_passe", nullable = false)
     private String motDePasse;
 
     public Administrateur() {
