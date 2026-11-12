@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.Types;
 import java.sql.Date;
 import java.math.BigDecimal;
+import java.sql.ResultSet;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -14,19 +15,93 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import util.Connexion;
 
-import java.sql.ResultSet;
+import util.Connexion;
 
 @WebServlet("/ajouterOffre")
 public class AjouterOffreServlet extends HttpServlet {
+
+    // Afficher un message avec le même design que les autres pages
+    private void afficherMessage(HttpServletRequest request,
+                                 HttpServletResponse response,
+                                 String titre,
+                                 String message,
+                                 String lien,
+                                 String texteLien)
+            throws IOException {
+
+        response.setContentType("text/html;charset=UTF-8");
+
+        String url = request.getContextPath() + lien;
+
+        response.getWriter().println(
+            "<!DOCTYPE html>" +
+            "<html lang='fr'>" +
+            "<head>" +
+            "<meta charset='UTF-8'>" +
+            "<title>" + titre + "</title>" +
+
+            "<style>" +
+            "body {" +
+                "font-family: Arial, sans-serif;" +
+                "background-color: #f4f7f5;" +
+                "margin: 0;" +
+                "padding: 30px;" +
+                "display: flex;" +
+                "justify-content: center;" +
+                "align-items: center;" +
+                "min-height: 90vh;" +
+            "}" +
+
+            ".container {" +
+                "background-color: white;" +
+                "width: 400px;" +
+                "padding: 35px;" +
+                "border-radius: 10px;" +
+                "box-shadow: 0 2px 10px rgba(0,0,0,0.08);" +
+                "text-align: center;" +
+            "}" +
+
+            "h2 {" +
+                "color: #2e7d32;" +
+                "margin-bottom: 20px;" +
+            "}" +
+
+            "p {" +
+                "color: #555;" +
+                "margin-bottom: 25px;" +
+            "}" +
+
+            "a {" +
+                "display: inline-block;" +
+                "background-color: #2e7d32;" +
+                "color: white;" +
+                "padding: 12px 20px;" +
+                "border-radius: 5px;" +
+                "text-decoration: none;" +
+            "}" +
+
+            "a:hover {" +
+                "background-color: #1b5e20;" +
+            "}" +
+            "</style>" +
+
+            "</head>" +
+            "<body>" +
+            "<div class='container'>" +
+            "<h2>" + titre + "</h2>" +
+            "<p>" + message + "</p>" +
+            "<a href='" + url + "'>" + texteLien + "</a>" +
+            "</div>" +
+            "</body>" +
+            "</html>"
+        );
+    }
 
     @Override
     protected void doPost(HttpServletRequest request,
                           HttpServletResponse response)
             throws ServletException, IOException {
-
-        response.setContentType("text/html;charset=UTF-8");
 
         HttpSession session = request.getSession(false);
 
@@ -34,7 +109,7 @@ public class AjouterOffreServlet extends HttpServlet {
             session.getAttribute("entreprise") == null) {
 
             response.sendRedirect(
-                request.getContextPath() + "/loginEntreprise.html");
+                request.getContextPath() + "/loginEntreprise.jsp");
             return;
         }
 
@@ -52,9 +127,9 @@ public class AjouterOffreServlet extends HttpServlet {
             "SELECT nom FROM Entreprise WHERE email = ?";
 
         String sqlOffre =
-            "INSERT INTO offre (titre, description, entreprise, lieu, "
-            + "type_contrat, date_limite, salaire) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+            "INSERT INTO offre (titre, description, entreprise, lieu, " +
+            "type_contrat, date_limite, salaire) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection con = Connexion.getConnection();
              PreparedStatement psEntreprise =
@@ -65,8 +140,13 @@ public class AjouterOffreServlet extends HttpServlet {
             try (ResultSet rs = psEntreprise.executeQuery()) {
 
                 if (!rs.next()) {
-                    response.getWriter().println(
-                        "<h3>Entreprise introuvable.</h3>");
+                    afficherMessage(
+                        request, response,
+                        "Entreprise introuvable",
+                        "L'entreprise associée à ce compte est introuvable.",
+                        "/ajouter-offre.jsp",
+                        "Retour"
+                    );
                     return;
                 }
 
@@ -109,26 +189,41 @@ public class AjouterOffreServlet extends HttpServlet {
                     int resultat = ps.executeUpdate();
 
                     if (resultat > 0) {
-                        response.getWriter().println(
-                            "<h2>Offre ajoutée avec succès !</h2>");
-                        response.getWriter().println(
-                            "<a href='" + request.getContextPath()
-                            + "/ajouter-offre.jsp'>Ajouter une autre offre</a>");
+                        afficherMessage(
+                            request, response,
+                            "Offre ajoutée avec succès !",
+                            "Votre offre d'emploi a été enregistrée.",
+                            "/ajouter-offre.jsp",
+                            "Ajouter une autre offre"
+                        );
                     }
                 }
             }
 
         } catch (IllegalArgumentException e) {
-            response.getWriter().println(
-                "<h3>Erreur : vérifiez la date limite et le salaire.</h3>");
+
+            afficherMessage(
+                request, response,
+                "Erreur de saisie",
+                "Vérifiez la date limite et le salaire.",
+                "/ajouter-offre.jsp",
+                "Retour au formulaire"
+            );
+
         } catch (Exception e) {
+
             e.printStackTrace();
 
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().println("<h3>Erreur lors de l'ajout de l'offre :</h3>");
-            response.getWriter().println("<pre>");
-            response.getWriter().println(e.getMessage());
-            response.getWriter().println("</pre>");
+            response.setStatus(
+                HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+
+            afficherMessage(
+                request, response,
+                "Erreur lors de l'ajout",
+                "Une erreur est survenue : " + e.getMessage(),
+                "/ajouter-offre.jsp",
+                "Retour au formulaire"
+            );
         }
     }
 }
