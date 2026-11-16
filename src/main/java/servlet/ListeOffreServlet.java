@@ -2,9 +2,9 @@
 package servlet;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.util.List;
+
+import org.hibernate.Session;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -13,7 +13,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
-import util.Connexion;
+import model.Entreprise;
+import model.Offre;
+import util.HibernateUtil;
 
 @WebServlet("/listeOffre")
 public class ListeOffreServlet extends HttpServlet {
@@ -23,27 +25,48 @@ public class ListeOffreServlet extends HttpServlet {
                          HttpServletResponse response)
             throws ServletException, IOException {
 
+        // Vérifier la session
         HttpSession session = request.getSession(false);
 
         if (session == null ||
             session.getAttribute("entreprise") == null) {
 
             response.sendRedirect(
-                request.getContextPath() + "/loginEntreprise.jsp"
-            );
+                request.getContextPath() + "/loginEntreprise.jsp");
             return;
         }
 
-        String sql = "SELECT * FROM offre ORDER BY id_offre DESC";
+        // Dans ton projet, entreprise contient l'email
+        String emailEntreprise =
+                (String) session.getAttribute("entreprise");
 
-        try {
-            Connection con = Connexion.getConnection();
+        try (Session hSession =
+                HibernateUtil.getSessionFactory().openSession()) {
 
-            PreparedStatement ps = con.prepareStatement(sql);
+            // Récupérer l'entreprise connectée
+            Entreprise entreprise = hSession.createQuery(
+                    "FROM Entreprise WHERE email = :email",
+                    Entreprise.class)
+                    .setParameter("email", emailEntreprise)
+                    .uniqueResult();
 
-            ResultSet rs = ps.executeQuery();
+            if (entreprise == null) {
 
-            request.setAttribute("offres", rs);
+                response.sendError(
+                    HttpServletResponse.SC_NOT_FOUND,
+                    "Entreprise introuvable."
+                );
+                return;
+            }
+
+            // Récupérer uniquement les offres de cette entreprise
+            List<Offre> offres = hSession.createQuery(
+                    "FROM Offre WHERE entreprise = :nom ORDER BY idOffre DESC",
+                    Offre.class)
+                    .setParameter("nom", entreprise.getNom())
+                    .list();
+
+            request.setAttribute("offres", offres);
 
             request.getRequestDispatcher("/liste-offre.jsp")
                    .forward(request, response);
@@ -53,8 +76,7 @@ public class ListeOffreServlet extends HttpServlet {
             e.printStackTrace();
 
             throw new ServletException(
-                "Erreur lors de la lecture des offres.", e
-            );
+                "Erreur lors de la récupération des offres.", e);
         }
     }
 }

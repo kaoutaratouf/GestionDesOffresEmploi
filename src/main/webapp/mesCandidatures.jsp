@@ -1,13 +1,15 @@
 
-<%@ page language="java" contentType="text/html; charset=UTF-8"
-    pageEncoding="UTF-8"%>
-
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
 <%@ page import="model.Candidature" %>
 
+<%
+    List<Candidature> candidatures =
+        (List<Candidature>) request.getAttribute("candidatures");
+%>
+
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
     <meta charset="UTF-8">
     <title>Mes candidatures</title>
@@ -15,87 +17,54 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f7f5;
-            margin: 0;
+            background: #f4f7f5;
             padding: 30px;
-            color: #333;
         }
 
         .container {
-            max-width: 1000px;
-            margin: 30px auto;
-            background-color: white;
+            max-width: 900px;
+            margin: auto;
+            background: white;
             padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            border-radius: 8px;
         }
 
-        h1 {
-            text-align: center;
+        h2 {
             color: #2e7d32;
-            margin-bottom: 30px;
-        }
-
-        .message {
-            padding: 12px 15px;
-            margin-bottom: 15px;
-            border-radius: 5px;
-            background-color: #e8f5e9;
-            color: #1b5e20;
-            border-left: 4px solid #2e7d32;
-        }
-
-        .table-container {
-            overflow-x: auto;
+            text-align: center;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
-            min-width: 650px;
+            margin-top: 25px;
         }
 
         th {
-            background-color: #2e7d32;
+            background: #2e7d32;
             color: white;
-            padding: 13px;
-            text-align: left;
+            padding: 12px;
         }
 
         td {
-            padding: 13px;
+            padding: 12px;
+            text-align: center;
             border-bottom: 1px solid #ddd;
         }
 
-        tr:hover {
-            background-color: #f1f8f2;
+        .attente {
+            color: #e69500;
+            font-weight: bold;
         }
 
-        .empty-message {
-            text-align: center;
-            color: #777;
-            padding: 20px;
+        .acceptee {
+            color: #2e7d32;
+            font-weight: bold;
         }
 
-        .links {
-            margin-top: 25px;
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .links a {
-            display: inline-block;
-            background-color: #2e7d32;
-            color: white;
-            padding: 11px 18px;
-            border-radius: 5px;
-            text-decoration: none;
-        }
-
-        .links a:hover {
-            background-color: #1b5e20;
+        .refusee {
+            color: #d32f2f;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -104,73 +73,64 @@
 
 <div class="container">
 
-    <h1>Mes candidatures</h1>
+    <h2>Mes candidatures</h2>
 
-    <%
-        String message = request.getParameter("message");
+    <table>
 
-        if ("succes".equals(message)) {
-    %>
+        <tr>
+            <th>Offre</th>
+            <th>Entreprise</th>
+            <th>Date de candidature</th>
+            <th>Statut de ma candidature</th>
+        </tr>
 
-        <p class="message">
-            Votre candidature a été envoyée avec succès.
-        </p>
+        <%
+            if (candidatures != null && !candidatures.isEmpty()) {
 
-    <%
-        } else if ("deja".equals(message)) {
-    %>
+                for (Candidature c : candidatures) {
 
-        <p class="message">
-            Vous avez déjà postulé à cette offre.
-        </p>
+                    String statut = c.getStatut();
 
-    <%
-        }
+                    String classe = "attente";
 
-        List<Candidature> candidatures =
-            (List<Candidature>) request.getAttribute("candidatures");
-    %>
+                    if ("Acceptée".equals(statut)) {
+                        classe = "acceptee";
+                    } else if ("Refusée".equals(statut)) {
+                        classe = "refusee";
+                    }
+        %>
 
-    <% if (candidatures == null || candidatures.isEmpty()) { %>
+        <tr>
 
-        <p class="empty-message">
-            Vous n'avez envoyé aucune candidature.
-        </p>
+            <td><%= c.getTitreOffre() %></td>
 
-    <% } else { %>
+            <td><%= c.getEntreprise() %></td>
 
-        <div class="table-container">
+            <td><%= c.getDateCandidature() %></td>
 
-            <table>
-                <tr>
-                    <th>Offre</th>
-                    <th>Entreprise</th>
-                    <th>Date de candidature</th>
-                    <th>État</th>
-                </tr>
+            <td class="<%= classe %>">
+                <%= statut == null ? "En attente" : statut %>
+            </td>
 
-                <% for (Candidature c : candidatures) { %>
+        </tr>
 
-                    <tr>
-                        <td><%= c.getTitreOffre() %></td>
-                        <td><%= c.getEntreprise() %></td>
-                        <td><%= c.getDateCandidature() %></td>
-                        <td><%= c.getStatut() %></td>
-                    </tr>
+        <%
+                }
 
-                <% } %>
+            } else {
+        %>
 
-            </table>
+        <tr>
+            <td colspan="4">
+                Vous n'avez pas encore postulé à une offre.
+            </td>
+        </tr>
 
-        </div>
+        <%
+            }
+        %>
 
-    <% } %>
-
-    <div class="links">
-        <a href="offres">Consulter les offres</a>
-
-        <a href="accueilCandidat.jsp">Retour à l'accueil</a>
-    </div>
+    </table>
 
 </div>
 

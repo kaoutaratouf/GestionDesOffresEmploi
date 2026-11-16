@@ -1,3 +1,4 @@
+
 package dao;
 
 import java.util.ArrayList;
@@ -6,141 +7,264 @@ import java.util.List;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
-import model.Candidat;
 import model.Candidature;
+import model.Candidat;
 import model.Offre;
 import util.HibernateUtil;
 
 public class CandidatureDAO {
 
-    // Afficher toutes les candidatures reçues
-    public List<Candidature> afficherToutes() {
-        List<Candidature> resultat = new ArrayList<>();
+    // 1. Afficher les candidatures reçues par une entreprise
+    public List<Candidature> afficherParEntreprise(String nomEntreprise) {
+
+        List<Candidature> liste = new ArrayList<>();
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
 
-            List<Object[]> lignes = session.createQuery(
-                "SELECT c, ca, o FROM Candidature c, Candidat ca, Offre o "
-              + "WHERE c.idCandidat = ca.idCandidat "
-              + "AND c.idOffre = o.idOffre "
-              + "ORDER BY c.dateCandidature DESC",
-                Object[].class).getResultList();
+            String hql = "SELECT c, ca.nom, ca.prenom, ca.email, o.titre " +
+                         "FROM Candidature c, Candidat ca, Offre o " +
+                         "WHERE c.idCandidat = ca.idCandidat " +
+                         "AND c.idOffre = o.idOffre " +
+                         "AND o.entreprise = :entreprise " +
+                         "ORDER BY c.dateCandidature DESC";
 
-            for (Object[] ligne : lignes) {
-                Candidature c = (Candidature) ligne[0];
-                Candidat ca = (Candidat) ligne[1];
-                Offre o = (Offre) ligne[2];
+            List<Object[]> resultats = session.createQuery(hql, Object[].class)
+                    .setParameter("entreprise", nomEntreprise)
+                    .list();
 
-                c.setNomCandidat(ca.getNom());
-                c.setPrenomCandidat(ca.getPrenom());
-                c.setEmailCandidat(ca.getEmail());
-                c.setTitreOffre(o.getTitre());
-                c.setEntreprise(o.getEntreprise());
+            for (Object[] resultat : resultats) {
 
-                resultat.add(c);
+                Candidature c = (Candidature) resultat[0];
+
+                c.setNomCandidat((String) resultat[1]);
+                c.setPrenomCandidat((String) resultat[2]);
+                c.setEmailCandidat((String) resultat[3]);
+                c.setTitreOffre((String) resultat[4]);
+
+                liste.add(c);
             }
 
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        return resultat;
+        return liste;
     }
 
-    // Accepter ou refuser une candidature
-    public boolean changerStatut(int idCandidature, String statut) {
 
-        if (!statut.equals("Acceptée") && !statut.equals("Refusée")) {
+
+public boolean postuler(int idCandidat, int idOffre) {
+
+    Transaction transaction = null;
+
+    try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+
+        transaction = session.beginTransaction();
+
+        // Vérifier si l'offre existe
+        Offre offre = session.get(Offre.class, idOffre);
+
+        if (offre == null) {
+            transaction.rollback();
             return false;
         }
 
-        Transaction tx = null;
+        // Vérifier si le candidat a déjà postulé
+        String hql = "SELECT COUNT(c) FROM Candidature c " +
+                     "WHERE c.idCandidat = :idCandidat " +
+                     "AND c.idOffre = :idOffre";
+
+        Long nombre = session.createQuery(hql, Long.class)
+                .setParameter("idCandidat", idCandidat)
+                .setParameter("idOffre", idOffre)
+                .uniqueResult();
+
+        if (nombre > 0) {
+            transaction.rollback();
+            return false;
+        }
+
+        // Créer une nouvelle candidature
+        Candidature candidature = new Candidature(
+                idCandidat,
+                idOffre,
+                "En attente"
+        );
+
+        session.persist(candidature);
+
+        transaction.commit();
+
+        return true;
+
+    } catch (Exception e) {
+
+        if (transaction != null && transaction.isActive()) {
+            transaction.rollback();
+        }
+
+        e.printStackTrace();
+        return false;
+    }
+}
+
+
+public List<Candidature> afficherToutes() {
+
+    List<Candidature> liste = new ArrayList<>();
+
+    try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+
+        String hql = "SELECT c, ca.nom, ca.prenom, ca.email, o.titre, o.entreprise " +
+                     "FROM Candidature c, Candidat ca, Offre o " +
+                     "WHERE c.idCandidat = ca.idCandidat " +
+                     "AND c.idOffre = o.idOffre " +
+                     "ORDER BY c.dateCandidature DESC";
+
+        List<Object[]> resultats =
+                session.createQuery(hql, Object[].class).list();
+
+        for (Object[] resultat : resultats) {
+
+            Candidature c = (Candidature) resultat[0];
+
+            c.setNomCandidat((String) resultat[1]);
+            c.setPrenomCandidat((String) resultat[2]);
+            c.setEmailCandidat((String) resultat[3]);
+            c.setTitreOffre((String) resultat[4]);
+            c.setEntreprise((String) resultat[5]);
+
+            liste.add(c);
+        }
+
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+
+    return liste;
+}
+
+public List<Candidature> afficherParOffre(int idOffre,
+                                          String nomEntreprise) {
+
+    List<Candidature> liste = new ArrayList<>();
+
+    try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+
+        String hql = "SELECT c, ca.nom, ca.prenom, ca.email, o.titre " +
+                     "FROM Candidature c, Candidat ca, Offre o " +
+                     "WHERE c.idCandidat = ca.idCandidat " +
+                     "AND c.idOffre = o.idOffre " +
+                     "AND o.idOffre = :idOffre " +
+                     "AND o.entreprise = :entreprise " +
+                     "ORDER BY c.dateCandidature DESC";
+
+        List<Object[]> resultats = session.createQuery(hql, Object[].class)
+                .setParameter("idOffre", idOffre)
+                .setParameter("entreprise", nomEntreprise)
+                .list();
+
+        for (Object[] resultat : resultats) {
+
+            Candidature c = (Candidature) resultat[0];
+
+            c.setNomCandidat((String) resultat[1]);
+            c.setPrenomCandidat((String) resultat[2]);
+            c.setEmailCandidat((String) resultat[3]);
+            c.setTitreOffre((String) resultat[4]);
+
+            liste.add(c);
+        }
+
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+
+    return liste;
+}
+
+
+    // 2. Afficher les candidatures d'un candidat
+    public List<Candidature> afficherParCandidat(int idCandidat) {
+
+        List<Candidature> liste = new ArrayList<>();
+
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            tx = session.beginTransaction();
 
-            int lignes = session.createMutationQuery(
-                "UPDATE Candidature SET statut = :statut "
-              + "WHERE idCandidature = :id")
-                .setParameter("statut", statut)
-                .setParameter("id", idCandidature)
-                .executeUpdate();
+            String hql = "SELECT c, o.titre, o.entreprise " +
+                         "FROM Candidature c, Offre o " +
+                         "WHERE c.idOffre = o.idOffre " +
+                         "AND c.idCandidat = :id " +
+                         "ORDER BY c.dateCandidature DESC";
 
-            tx.commit();
-            return lignes > 0;
+            List<Object[]> resultats = session.createQuery(hql, Object[].class)
+                    .setParameter("id", idCandidat)
+                    .list();
+
+            for (Object[] resultat : resultats) {
+
+                Candidature c = (Candidature) resultat[0];
+
+                c.setTitreOffre((String) resultat[1]);
+                c.setEntreprise((String) resultat[2]);
+
+                liste.add(c);
+            }
 
         } catch (Exception e) {
-            if (tx != null && tx.isActive()) tx.rollback();
             e.printStackTrace();
-            return false;
         }
+
+        return liste;
     }
 
-    // Postuler à une offre
-    public boolean postuler(int idCandidat, int idOffre) {
 
-        Transaction tx = null;
+    // 3. Accepter ou refuser une candidature
+    // Vérification : l'offre doit appartenir à l'entreprise connectée
+    public boolean changerStatut(int idCandidature,
+                                 String nouveauStatut,
+                                 String nomEntreprise) {
+
+        Transaction transaction = null;
+
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
 
-            // Vérifier si le candidat a déjà postulé
-            Long deja = session.createQuery(
-                "SELECT COUNT(c) FROM Candidature c "
-              + "WHERE c.idCandidat = :cand AND c.idOffre = :offre",
-                Long.class)
-                .setParameter("cand", idCandidat)
-                .setParameter("offre", idOffre)
-                .getSingleResult();
+            transaction = session.beginTransaction();
 
-            if (deja > 0) {
+            Candidature candidature = session.get(
+                    Candidature.class, idCandidature);
+
+            if (candidature == null) {
+                transaction.rollback();
                 return false;
             }
 
-            tx = session.beginTransaction();
+            Offre offre = session.get(
+                    Offre.class, candidature.getIdOffre());
 
-            Candidature c = new Candidature();
-            c.setIdCandidat(idCandidat);
-            c.setIdOffre(idOffre);
-            c.setStatut("En attente");
+            if (offre == null ||
+                !offre.getEntreprise().equals(nomEntreprise)) {
 
-            session.persist(c);
-            tx.commit();
+                transaction.rollback();
+                return false;
+            }
+
+            candidature.setStatut(nouveauStatut);
+
+            session.merge(candidature);
+
+            transaction.commit();
+
             return true;
 
         } catch (Exception e) {
-            if (tx != null && tx.isActive()) tx.rollback();
+
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+
             e.printStackTrace();
             return false;
         }
-    }
-
-    // Candidatures d'un candidat
-    public List<Candidature> afficherParCandidat(int idCandidat) {
-        List<Candidature> resultat = new ArrayList<>();
-
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-
-            List<Object[]> lignes = session.createQuery(
-                "SELECT c, o FROM Candidature c, Offre o "
-              + "WHERE c.idOffre = o.idOffre "
-              + "AND c.idCandidat = :id "
-              + "ORDER BY c.dateCandidature DESC",
-                Object[].class)
-                .setParameter("id", idCandidat)
-                .getResultList();
-
-            for (Object[] ligne : lignes) {
-                Candidature c = (Candidature) ligne[0];
-                Offre o = (Offre) ligne[1];
-
-                c.setTitreOffre(o.getTitre());
-                c.setEntreprise(o.getEntreprise());
-
-                resultat.add(c);
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return resultat;
     }
 }

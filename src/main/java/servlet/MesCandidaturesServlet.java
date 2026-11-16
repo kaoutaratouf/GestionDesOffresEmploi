@@ -20,17 +20,21 @@ public class MesCandidaturesServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request,
-            HttpServletResponse response)
+                         HttpServletResponse response)
             throws ServletException, IOException {
 
         HttpSession session = request.getSession(false);
 
-        if (session == null || session.getAttribute("candidat") == null) {
-            response.sendRedirect("connexion.jsp");
+        if (session == null ||
+            session.getAttribute("candidat") == null) {
+
+            response.sendRedirect(
+                request.getContextPath() + "/connexion.jsp");
             return;
         }
 
-        Candidat candidat = (Candidat) session.getAttribute("candidat");
+        Candidat candidat =
+                (Candidat) session.getAttribute("candidat");
 
         CandidatureDAO dao = new CandidatureDAO();
 

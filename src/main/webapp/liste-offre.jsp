@@ -1,8 +1,8 @@
 
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 
-<%@ page import="java.sql.ResultSet" %>
-<%@ page import="java.math.BigDecimal" %>
+<%@ page import="java.util.List" %>
+<%@ page import="model.Offre" %>
 
 <%
     if (session.getAttribute("entreprise") == null) {
@@ -10,7 +10,8 @@
         return;
     }
 
-    ResultSet offres = (ResultSet) request.getAttribute("offres");
+    List<Offre> offres =
+        (List<Offre>) request.getAttribute("offres");
 %>
 
 <!DOCTYPE html>
@@ -144,6 +145,23 @@
         .back-link:hover {
             text-decoration: underline;
         }
+        .btn-candidatures {
+    display: inline-block;
+    background-color: #1976d2;
+    color: white !important;
+    padding: 8px 12px;
+    border-radius: 5px;
+    text-decoration: none !important;
+    font-size: 13px;
+    font-weight: bold;
+    margin: 5px;
+    transition: 0.3s;
+}
+
+.btn-candidatures:hover {
+    background-color: #0d47a1;
+    color: white !important;
+}
     </style>
 </head>
 
@@ -166,92 +184,85 @@
 
         <div class="table-container">
 
-            <table>
+          
+<table>
 
-                <tr>
-                    <th>ID</th>
-                    <th>Titre</th>
-                    <th>Description</th>
-                    <th>Entreprise</th>
-                    <th>Lieu</th>
-                    <th>Contrat</th>
-                    <th>Date publication</th>
-                    <th>Date limite</th>
-                    <th>Salaire</th>
-                    <th>Statut</th>
-                    <th>Actions</th>
-                </tr>
+    <tr>
+        <th>ID</th>
+        <th>Titre</th>
+        <th>Description</th>
+        <th>Entreprise</th>
+        <th>Lieu</th>
+        <th>Contrat</th>
+        <th>Date publication</th>
+        <th>Date limite</th>
+        <th>Salaire</th>
+        <th>Statut</th>
+        <th>Actions</th>
+    </tr>
 
-                <%
-                    boolean trouve = false;
+    <%
+        if (offres != null && !offres.isEmpty()) {
 
-                    if (offres != null) {
-                        while (offres.next()) {
+            for (Offre o : offres) {
+    %>
 
-                            trouve = true;
-                            int id = offres.getInt("id_offre");
-                %>
+    <tr>
 
-                <tr>
+        <td><%= o.getIdOffre() %></td>
+        <td><%= o.getTitre() %></td>
+        <td><%= o.getDescription() %></td>
+        <td><%= o.getEntreprise() %></td>
+        <td><%= o.getLieu() == null ? "" : o.getLieu() %></td>
+        <td><%= o.getTypeContrat() %></td>
+        <td><%= o.getDatePublication() %></td>
+        <td><%= o.getDateLimite() == null ? "" : o.getDateLimite() %></td>
+        <td><%= o.getSalaire() %></td>
+        <td><%= o.getStatut() %></td>
 
-                    <td><%= id %></td>
+        <td>
 
-                    <td><%= offres.getString("titre") %></td>
+            <a href="${pageContext.request.contextPath}/modifierOffre?id=<%= o.getIdOffre() %>">
+                Modifier
+            </a>
 
-                    <td><%= offres.getString("description") %></td>
+            <form action="${pageContext.request.contextPath}/supprimerOffre"
+                  method="post"
+                  onsubmit="return confirm('Supprimer cette offre ?');">
 
-                    <td><%= offres.getString("entreprise") %></td>
+                <input type="hidden" name="id"
+                       value="<%= o.getIdOffre() %>">
 
-                    <td><%= offres.getString("lieu") == null ? "" : offres.getString("lieu") %></td>
+                <button type="submit">Supprimer</button>
 
-                    <td><%= offres.getString("type_contrat") %></td>
+            </form>
 
-                    <td><%= offres.getString("date_publication") %></td>
+            <a class="btn-candidatures"
+   href="${pageContext.request.contextPath}/candidaturesEntreprise?idOffre=<%= o.getIdOffre() %>">
+    Voir les candidatures
+</a>
+        </td>
 
-                    <td><%= offres.getString("date_limite") == null ? "" : offres.getString("date_limite") %></td>
+    </tr>
 
-                    <td><%= offres.getBigDecimal("salaire") == null ? "" : offres.getBigDecimal("salaire") %></td>
+    <%
+            }
 
-                    <td><%= offres.getString("statut") %></td>
+        } else {
+    %>
 
-                    <td>
+    <tr>
+        <td colspan="11" class="empty">
+            Aucune offre disponible.
+        </td>
+    </tr>
 
-                        <a href="${pageContext.request.contextPath}/modifierOffre?id=<%= id %>">
-                            Modifier
-                        </a>
+    <%
+        }
+    %>
 
-                        <form action="${pageContext.request.contextPath}/supprimerOffre"
-                              method="post"
-                              onsubmit="return confirm('Supprimer cette offre ?');">
+</table>
 
-                            <input type="hidden" name="id" value="<%= id %>">
-
-                            <button type="submit">Supprimer</button>
-
-                        </form>
-
-                    </td>
-
-                </tr>
-
-                <%
-                        }
-                    }
-
-                    if (!trouve) {
-                %>
-
-                <tr>
-                    <td colspan="11" class="empty">
-                        Aucune offre disponible.
-                    </td>
-                </tr>
-
-                <%
-                    }
-                %>
-
-            </table>
 
         </div>
 
